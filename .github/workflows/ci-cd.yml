@@ -86,10 +86,12 @@ jobs:
           env_vars: |-
             APP_ENV=production
             AUTH_REQUIRED=true
+            ALLOWLIST_EMAILS=${{ vars.ALLOWLIST_EMAILS }}
             DB_PROVIDER=firestore
             GOOGLE_CLOUD_PROJECT=${{ env.GCP_PROJECT_ID }}
             GOOGLE_CLOUD_LOCATION=${{ env.GCP_REGION }}
             FIRESTORE_DATABASE_ID=client-hub
+            NEXTAUTH_URL=https://hub.growingmonk.com
             GEMINI_PRO_MODEL=gemini-2.5-pro
             GEMINI_FLASH_MODEL=gemini-2.5-flash
             GEMINI_LITE_MODEL=gemini-2.5-flash-lite

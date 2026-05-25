@@ -1,0 +1,38 @@
+{
+  "name": "growingmonk-client-hub",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 3001",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run typecheck && npm run lint && npm run build",
+    "cloudrun:build": "gcloud builds submit --tag asia-south1-docker.pkg.dev/$GOOGLE_CLOUD_PROJECT/growingmonk-hub/growingmonk-client-hub",
+    "cloudrun:deploy": "gcloud run deploy growingmonk-client-hub --image asia-south1-docker.pkg.dev/$GOOGLE_CLOUD_PROJECT/growingmonk-hub/growingmonk-client-hub --region asia-south1 --platform managed --allow-unauthenticated"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.98.0",
+    "@google/generative-ai": "^0.21.0",
+    "clsx": "^2.1.1",
+    "google-auth-library": "^9.15.1",
+    "googleapis": "^140.0.0",
+    "lucide-react": "^0.468.0",
+    "next": "^14.2.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.3",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.3",
+    "typescript": "^5.4.5"
+  }
+}

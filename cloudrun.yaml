@@ -1,0 +1,42 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: growingmonk-client-hub
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "5"
+    spec:
+      containerConcurrency: 40
+      timeoutSeconds: 120
+      containers:
+        - image: asia-south1-docker.pkg.dev/growingmonk-495400/growingmonk-hub/growingmonk-client-hub
+          ports:
+            - containerPort: 8080
+          env:
+            - name: APP_ENV
+              value: "production"
+            - name: DB_PROVIDER
+              value: "firestore"
+            - name: GOOGLE_CLOUD_PROJECT
+              value: "growingmonk-495400"
+            - name: GOOGLE_CLOUD_LOCATION
+              value: "asia-south1"
+            - name: FIRESTORE_DATABASE_ID
+              value: "client-hub"
+            - name: GOOGLE_OAUTH_REDIRECT_URI
+              value: "https://REPLACE_WITH_CLOUD_RUN_URL/api/integrations/gbp/oauth/callback"
+            - name: DEFAULT_GBP_PLACE_ID
+              value: "ChIJuVcVlxeTyzsRv7FDAzZhqpE"
+            - name: GEMINI_PRO_MODEL
+              value: "gemini-2.5-pro"
+            - name: GEMINI_FLASH_MODEL
+              value: "gemini-2.5-flash"
+            - name: GEMINI_LITE_MODEL
+              value: "gemini-2.5-flash-lite"
+            - name: GEMINI_API_KEY_SECRET
+              value: "gemini-api-key"

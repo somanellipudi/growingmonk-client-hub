@@ -1,0 +1,160 @@
+
+> growingmonk-client-hub@0.1.0 dev
+> next dev --hostname 127.0.0.1 --port 3001
+
+  ▲ Next.js 14.2.35
+  - Local:        http://127.0.0.1:3001
+  - Network:      http://127.0.0.1:3001
+
+ ✓ Starting...
+
+   We detected TypeScript in your project and reconfigured your tsconfig.json file for you. Strict-mode is set to false by default.
+   The following suggested values were added to your tsconfig.json. These values can be changed to fit your project's needs:
+
+   	- include was updated to add '.next-dev/types/**/*.ts'
+
+ ✓ Ready in 1613ms
+ ○ Compiling /src/middleware ...
+ ✓ Compiled /src/middleware in 1620ms (72 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 2.1s (460 modules)
+ GET / 307 in 2978ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 3.4s (605 modules)
+ GET /dashboard 200 in 2667ms
+ ✓ Compiled /api/auth/session in 106ms (305 modules)
+ ✓ Compiled (307 modules)
+ GET /api/auth/session 200 in 190ms
+ GET /api/auth/session 200 in 207ms
+ GET /api/db/summary 200 in 210ms
+ GET /api/db/summary 200 in 5ms
+ ○ Compiling /clients/new ...
+ ✓ Compiled /clients/new in 809ms (568 modules)
+ GET /api/auth/session 200 in 96ms
+ GET /api/db/summary 200 in 153ms
+ GET /api/auth/session 200 in 82ms
+ GET /api/db/summary 200 in 37ms
+ ✓ Compiled /api/health in 64ms (312 modules)
+ GET /api/health 200 in 85ms
+ GET /clients/new 200 in 253ms
+ GET /api/auth/session 200 in 67ms
+ GET /api/auth/session 200 in 68ms
+ GET /api/db/summary 200 in 94ms
+ GET /api/db/summary 200 in 98ms
+ GET /api/auth/session 200 in 14ms
+ GET /api/db/summary 200 in 30ms
+ GET /api/auth/session 200 in 21ms
+ GET /api/db/summary 200 in 19ms
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 656ms (562 modules)
+ GET /api/auth/session 200 in 29ms
+ GET /api/auth/session 200 in 32ms
+ GET /api/db/summary 200 in 44ms
+ GET /api/db/summary 200 in 47ms
+ GET /api/auth/session 200 in 23ms
+ GET /api/auth/session 200 in 28ms
+ GET /api/db/summary 200 in 37ms
+ GET /api/db/summary 200 in 41ms
+ ○ Compiling /ai ...
+ ✓ Compiled /ai in 1365ms (564 modules)
+ GET /api/auth/session 200 in 166ms
+ GET /api/db/summary 200 in 191ms
+ GET /api/auth/session 200 in 21ms
+ GET /api/db/summary 200 in 110ms
+ ✓ Compiled in 1499ms (272 modules)
+ GET /api/auth/session 200 in 153ms
+ GET /api/auth/session 200 in 153ms
+ GET /api/db/summary 200 in 258ms
+ GET /api/db/summary 200 in 262ms
+ GET /api/auth/session 200 in 30ms
+ GET /api/auth/session 200 in 32ms
+ GET /api/db/summary 200 in 36ms
+ GET /api/db/summary 200 in 37ms
+ ✓ Compiled in 2.5s (650 modules)
+ ✓ Compiled in 459ms (557 modules)
+ ✓ Compiled in 75ms (278 modules)
+ ✓ Compiled in 107ms (615 modules)
+ GET /clients/new 200 in 77ms
+ ✓ Compiled /api/db/summary in 49ms (309 modules)
+ ✓ Compiled (311 modules)
+ GET /api/auth/session 200 in 149ms
+ GET /api/db/summary 200 in 72ms
+ GET /api/auth/session 200 in 75ms
+ GET /api/db/summary 200 in 130ms
+ ✓ Compiled in 179ms (595 modules)
+ ✓ Compiled /api/clients in 66ms (319 modules)
+ POST /api/clients 201 in 90ms
+ ✓ Compiled /api/clients/[id] in 86ms (321 modules)
+ GET /api/clients/client_mp96rcn6_fb8ehy 200 in 362ms
+ DELETE /api/clients/client_mp96rcn6_fb8ehy 200 in 11ms
+ GET /api/db/summary 200 in 7ms
+ GET /clients/new 200 in 197ms
+ GET /api/auth/session 200 in 43ms
+ GET /api/auth/session 200 in 77ms
+ GET /api/db/summary 200 in 89ms
+ GET /api/db/summary 200 in 93ms
+ ✓ Compiled in 136ms (278 modules)
+ ✓ Compiled in 357ms (621 modules)
+ ✓ Compiled in 340ms (565 modules)
+ ✓ Compiled /api/source-audits in 72ms (317 modules)
+ GET /api/source-audits?q= 200 in 113ms
+ GET /api/source-audits?q= 200 in 116ms
+ ✓ Compiled in 174ms (596 modules)
+ ✓ Compiled in 182ms (596 modules)
+ ✓ Compiled in 309ms (565 modules)
+ ✓ Compiled /api/source-audits in 52ms (317 modules)
+ GET /api/source-audits?q= 200 in 97ms
+ GET /api/source-audits?q= 200 in 101ms
+ GET /api/source-audits?q= 200 in 7ms
+ GET /api/source-audits?q= 200 in 9ms
+ GET /api/source-audits?q=jawed 200 in 5ms
+ GET /clients/new 200 in 473ms
+ GET /api/source-audits?q= 200 in 131ms
+ GET /api/source-audits?q= 200 in 135ms
+ ○ Compiling /api/auth/session ...
+ ✓ Compiled /api/auth/session in 532ms (319 modules)
+ ✓ Compiled in 1ms (321 modules)
+ ✓ Compiled in 1ms (321 modules)
+ ✓ Compiled in 1ms (321 modules)
+ GET /api/db/summary 200 in 1165ms
+ GET /api/db/summary 200 in 820ms
+ GET /api/auth/session 200 in 1380ms
+ GET /api/auth/session 200 in 1032ms
+ GET /api/source-audits?q= 200 in 25ms
+ GET /api/source-audits?q= 200 in 27ms
+ ✓ Compiled /api/clients in 168ms (323 modules)
+ POST /api/clients 201 in 221ms
+ ○ Compiling /clients/[id] ...
+ ✓ Compiled /clients/[id] in 723ms (611 modules)
+ ✓ Compiled in 2.4s (279 modules)
+ GET /api/auth/session 200 in 54ms
+ GET /api/auth/session 200 in 55ms
+ GET /api/db/summary 200 in 70ms
+ GET /api/db/summary 200 in 67ms
+ ✓ Compiled /ai in 206ms (334 modules)
+ GET /api/auth/session 200 in 50ms
+ GET /api/db/summary 200 in 54ms
+ GET /api/auth/session 200 in 23ms
+ GET /api/db/summary 200 in 26ms
+ GET /api/auth/session 200 in 45ms
+ GET /api/auth/session 200 in 33ms
+ GET /api/db/summary 200 in 54ms
+ GET /api/db/summary 200 in 43ms
+ GET /api/auth/session 200 in 40ms
+ GET /api/auth/session 200 in 30ms
+ GET /api/db/summary 200 in 46ms
+ GET /api/db/summary 200 in 40ms
+ ✓ Compiled in 192ms (279 modules)
+ ✓ Compiled in 558ms (576 modules)
+ ✓ Compiled in 86ms (279 modules)
+ ✓ Compiled in 161ms (279 modules)
+ ✓ Compiled in 563ms (571 modules)
+ ✓ Compiled in 88ms (283 modules)
+ ✓ Compiled in 99ms (283 modules)
+ ✓ Compiled /api/clients in 118ms (332 modules)
+ GET /api/clients 200 in 180ms
+ ✓ Compiled /api/clients/[id]/snapshots in 186ms (334 modules)
+ POST /api/clients/client_mp9whbnd_277uwv/snapshots 201 in 518ms
+ ✓ Compiled /api/clients/[id]/snapshots/[wid] in 89ms (336 modules)
+ PUT /api/clients/client_mp9whbnd_277uwv/snapshots/week_mp9wnrxc_1f4dvf 200 in 421ms
+[?25h

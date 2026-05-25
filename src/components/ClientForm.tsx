@@ -756,7 +756,7 @@ function MetaDiscoverPanel({
         <Sparkles size={14} className="text-gm-orange shrink-0" />
         <p className="text-sm font-semibold text-ink">Auto-discover all Meta accounts</p>
       </div>
-      <p className=”text-xs text-muted”>Paste your User Access Token &mdash; we&apos;ll fetch every Page, Instagram account, Ad Account, and Business Manager connected to it.</p>
+      <p className="text-xs text-muted">Paste your User Access Token &mdash; we&apos;ll fetch every Page, Instagram account, Ad Account, and Business Manager connected to it.</p>
 
       <div className="flex gap-2">
         <input

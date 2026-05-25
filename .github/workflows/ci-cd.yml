@@ -86,7 +86,7 @@ jobs:
           env_vars: |-
             APP_ENV=production
             AUTH_REQUIRED=true
-            ALLOWLIST_EMAILS=${{ vars.ALLOWLIST_EMAILS }}
+            ALLOWLIST_EMAILS=mygrowingmonk@gmail.com
             DB_PROVIDER=firestore
             GOOGLE_CLOUD_PROJECT=${{ env.GCP_PROJECT_ID }}
             GOOGLE_CLOUD_LOCATION=${{ env.GCP_REGION }}

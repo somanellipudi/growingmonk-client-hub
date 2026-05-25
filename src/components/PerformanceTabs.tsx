@@ -94,16 +94,17 @@ function InstagramTab({
               })()}
             </p>
           </div>
-          {metaDataMissing && (
+          {metaDataMissing ? (
             <MetaDiagnostics
               clientId={client.id}
               instagramHandle={client.instagramHandle}
             />
+          ) : (
+            <InstagramIdFinder
+              clientId={client.id}
+              instagramHandle={client.instagramHandle}
+            />
           )}
-          <InstagramIdFinder
-            clientId={client.id}
-            instagramHandle={client.instagramHandle}
-          />
         </div>
         <div className="border border-stoneLine bg-ivory p-4">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted mb-3">

@@ -464,8 +464,8 @@ function GrowthTab({ data }: { data: DeepAnalysis["growthPlan"] }) {
   );
 }
 
-export function DeepInsightsPanel({ clientId }: { clientId: string }) {
-  const [analysis, setAnalysis] = useState<DeepAnalysis | null>(null);
+export function DeepInsightsPanel({ clientId, initialAnalysis }: { clientId: string; initialAnalysis?: DeepAnalysis | null }) {
+  const [analysis, setAnalysis] = useState<DeepAnalysis | null>(initialAnalysis ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("reviews");

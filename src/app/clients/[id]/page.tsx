@@ -446,7 +446,7 @@ function BriefReady({
       />
 
       {/* ── Section 6: Deep AI Intelligence ────────────────────────────── */}
-      <DeepInsightsPanel clientId={client.id} />
+      <DeepInsightsPanel clientId={client.id} initialAnalysis={client.deepAnalysis ?? null} />
 
     </div>
   );

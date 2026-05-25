@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { Client, Competitor, LeadLog, LeadOutcome, Platform, ReviewCountSnapshot, ReviewRequestLog, SessionResult, WeeklyBrief } from "@/types";
+import type { DeepAnalysis } from "@/app/api/clients/[id]/ai/deep-analysis/route";
 import { env } from "./env";
 import { readDb, resetDb, writeDb } from "./db";
 
@@ -199,6 +200,14 @@ export async function setPortalEnabled(clientId: string, enabled: boolean) {
   const index = db.clients.findIndex((c) => c.id === clientId);
   if (index === -1) throw new Error("Client not found");
   db.clients[index] = { ...db.clients[index]!, portalEnabled: enabled };
+  await writeDb(db);
+}
+
+export async function saveDeepAnalysis(clientId: string, analysis: DeepAnalysis) {
+  const db = await readDb();
+  const index = db.clients.findIndex((c) => c.id === clientId);
+  if (index === -1) throw new Error("Client not found");
+  db.clients[index] = { ...db.clients[index]!, deepAnalysis: analysis };
   await writeDb(db);
 }
 

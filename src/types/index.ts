@@ -70,6 +70,7 @@ export interface Client {
   gbpPlaceReviewCount?: number;
   portalToken?: string;
   portalEnabled?: boolean;
+  deepAnalysis?: import("@/app/api/clients/[id]/ai/deep-analysis/route").DeepAnalysis;
   integrationStatus?: {
     meta: "connected" | "error" | "not_connected";
     gbp: "connected" | "error" | "not_connected";

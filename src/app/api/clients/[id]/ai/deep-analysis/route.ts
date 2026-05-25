@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { buildSystemPrompt } from "@/lib/ai/agentContext";
 import { callClaudeJSON } from "@/lib/ai/claude";
-import { getClient, listBriefHistory } from "@/lib/server/repositories";
+import { getClient, listBriefHistory, saveDeepAnalysis } from "@/lib/server/repositories";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -324,5 +324,6 @@ Rules:
 - Every string must be specific to THIS business — if you write something that could apply to any business, rewrite it`
   );
 
+  await saveDeepAnalysis(params.id, analysis);
   return NextResponse.json({ analysis });
 }

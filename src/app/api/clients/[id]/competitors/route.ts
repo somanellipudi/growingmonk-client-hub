@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getClient, getAllCompetitorSnapshots } from "@/lib/server/repositories";
+import { getClient, getAllCompetitorSnapshots, addCompetitor } from "@/lib/server/repositories";
 
 export const dynamic = "force-dynamic";
 
@@ -30,4 +30,18 @@ export async function GET(
   });
 
   return NextResponse.json({ competitorData, clientCount: client.gbpPlaceReviewCount ?? null, clientRating: client.gbpPlaceRating ?? null });
+}
+
+export async function POST(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { name, placeId, note } = await request.json() as { name: string; placeId: string; note?: string };
+    if (!name || !placeId) return NextResponse.json({ error: "name and placeId required" }, { status: 400 });
+    const competitors = await addCompetitor(params.id, { name, placeId, note });
+    return NextResponse.json({ competitors });
+  } catch {
+    return NextResponse.json({ error: "Failed to add competitor" }, { status: 500 });
+  }
 }

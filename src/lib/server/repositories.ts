@@ -203,6 +203,18 @@ export async function setPortalEnabled(clientId: string, enabled: boolean) {
   await writeDb(db);
 }
 
+export async function addCompetitor(clientId: string, competitor: { name: string; placeId: string; note?: string }) {
+  const db = await readDb();
+  const index = db.clients.findIndex((c) => c.id === clientId);
+  if (index === -1) throw new Error("Client not found");
+  const existing = db.clients[index]!.competitors ?? [];
+  if (existing.some((c) => c.placeId === competitor.placeId)) return existing;
+  const newCompetitor = { id: `comp_${Date.now()}`, ...competitor };
+  db.clients[index] = { ...db.clients[index]!, competitors: [...existing, newCompetitor] };
+  await writeDb(db);
+  return db.clients[index]!.competitors;
+}
+
 export async function saveDeepAnalysis(clientId: string, analysis: DeepAnalysis) {
   const db = await readDb();
   const index = db.clients.findIndex((c) => c.id === clientId);

@@ -148,7 +148,8 @@ export async function resetDb() {
 async function readFirestoreState() {
   const token = await googleAccessToken(["https://www.googleapis.com/auth/datastore"]);
   const response = await fetch(firestoreStateUrl(), {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store"
   });
   if (response.status === 404) {
     const state = initialState("firestore");
@@ -169,6 +170,7 @@ async function writeFirestoreState(state: DbState) {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json"
     },
+    cache: "no-store",
     body: JSON.stringify({
       fields: {
         json: { stringValue: JSON.stringify(state) },

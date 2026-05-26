@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getClient } from "@/lib/server/repositories";
 import { env } from "@/lib/server/env";
+import { callGeminiJSON } from "@/lib/ai/gemini";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -112,6 +113,32 @@ async function nearbySearch(lat: number, lng: number, types: string[], apiKey: s
   return data.places ?? [];
 }
 
+type NicheDetection = { searchLabel: string; placesTypes: string[] };
+
+async function detectNicheWithAI(client: { name: string; nicheSubtype?: string; businessGoals?: string; city: string }): Promise<NicheDetection> {
+  try {
+    const result = await callGeminiJSON<NicheDetection>(
+      "niche_detection",
+      "You are a business classification assistant. Respond with valid JSON only.",
+      `Classify this business and return Google Places API types for finding nearby competitors.
+
+Business name: ${client.name}
+Subtype hint: ${client.nicheSubtype || "not specified"}
+Goals: ${client.businessGoals || "not specified"}
+City: ${client.city}
+
+Return JSON:
+{
+  "searchLabel": "short human label for this business type — e.g. 'hair salon', 'yoga studio', 'bakery' (2-3 words max)",
+  "placesTypes": ["up to 3 Google Places API (New) includedTypes values that best match — e.g. 'hair_salon', 'beauty_salon'. Use only real Places API types. Empty array if unsure."]
+}`
+    );
+    return result;
+  } catch {
+    return { searchLabel: client.nicheSubtype || "business", placesTypes: [] };
+  }
+}
+
 async function textSearch(query: string, lat: number, lng: number, apiKey: string): Promise<PlaceResult[]> {
   const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
     method: "POST",
@@ -159,10 +186,23 @@ export async function GET(
     }
   }
 
-  // Determine search label — use nicheSubtype first (most specific)
-  const nicheLabel = client.nicheSubtype || NICHE_LABEL[client.niche] || client.niche;
+  // Determine search label and Places types
+  let nicheLabel: string;
+  let types: string[];
+
+  const mappedTypes = NICHE_TYPES[client.niche] ?? [];
+  const needsAI = client.niche === "other" || (mappedTypes.length === 0 && !client.nicheSubtype);
+
+  if (needsAI) {
+    const detected = await detectNicheWithAI(client);
+    nicheLabel = detected.searchLabel;
+    types = detected.placesTypes;
+  } else {
+    nicheLabel = client.nicheSubtype || NICHE_LABEL[client.niche] || client.niche;
+    types = mappedTypes;
+  }
+
   const searchQuery = `${nicheLabel} in ${client.city}`;
-  const types = NICHE_TYPES[client.niche] ?? [];
 
   let places: PlaceResult[] = [];
 

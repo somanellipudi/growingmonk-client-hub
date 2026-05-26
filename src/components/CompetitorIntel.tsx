@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, MapPin, Plus, Search, Trash2 } from "lucide-react";
-import type { Competitor } from "@/types";
+import { ChevronDown, ChevronUp, Loader2, MapPin, Plus, Search, Sparkles, Trash2 } from "lucide-react";
+import type { Competitor, CompetitorInsights } from "@/types";
 import type { CompetitorSuggestion } from "@/app/api/clients/[id]/competitors/suggest/route";
 
 type HistoryPoint = { date: string; count: number; rating: number };
@@ -53,6 +53,150 @@ function DeltaBadge({ delta }: { delta: number | null }) {
     <span className={`text-xs font-semibold ${up ? "text-red-600" : "text-green-600"}`}>
       {up ? "↑" : "↓"}{Math.abs(delta)} this week
     </span>
+  );
+}
+
+function InsightsPanel({ insights }: { insights: CompetitorInsights }) {
+  const Tag = ({ text }: { text: string }) => (
+    <span className="inline-block bg-stone-100 text-ink text-[10px] px-2 py-0.5 rounded-sm">{text}</span>
+  );
+  return (
+    <div className="grid gap-3 pt-3">
+      {insights.summary && (
+        <p className="text-[11px] text-ink leading-5 italic">{insights.summary}</p>
+      )}
+      <div className="grid grid-cols-2 gap-3">
+        {insights.popularServices.length > 0 && (
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted mb-1.5">Popular services</p>
+            <div className="flex flex-wrap gap-1">{insights.popularServices.map((s) => <Tag key={s} text={s} />)}</div>
+          </div>
+        )}
+        {insights.popularProducts.length > 0 && (
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted mb-1.5">Products used</p>
+            <div className="flex flex-wrap gap-1">{insights.popularProducts.map((s) => <Tag key={s} text={s} />)}</div>
+          </div>
+        )}
+        {insights.starEmployees.length > 0 && (
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted mb-1.5">Star employees</p>
+            <div className="flex flex-wrap gap-1">{insights.starEmployees.map((s) => <Tag key={s} text={s} />)}</div>
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {insights.pros.length > 0 && (
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-green-700 mb-1.5">What they do well</p>
+            <ul className="grid gap-1">{insights.pros.map((p) => (
+              <li key={p} className="text-[11px] text-ink flex gap-1.5"><span className="text-green-600 shrink-0">✓</span>{p}</li>
+            ))}</ul>
+          </div>
+        )}
+        {insights.cons.length > 0 && (
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-red-700 mb-1.5">Your opportunity</p>
+            <ul className="grid gap-1">{insights.cons.map((c) => (
+              <li key={c} className="text-[11px] text-ink flex gap-1.5"><span className="text-red-500 shrink-0">✗</span>{c}</li>
+            ))}</ul>
+          </div>
+        )}
+      </div>
+      <p className="text-[10px] text-muted">Based on {insights.reviewsAnalyzed} reviews · analysed {new Date(insights.analyzedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
+    </div>
+  );
+}
+
+function CompetitorRow({
+  clientId, competitor, count, rating, delta7d, history, clientCount, removing, onRemove,
+}: {
+  clientId: string;
+  competitor: Competitor;
+  count: number | null;
+  rating: number | null;
+  delta7d: number | null;
+  history: HistoryPoint[];
+  clientCount: number | null;
+  removing: boolean;
+  onRemove: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [insights, setInsights] = useState<CompetitorInsights | null>(competitor.insights ?? null);
+
+  const ahead = clientCount !== null && count !== null ? clientCount - count : null;
+
+  async function analyze() {
+    setAnalyzing(true);
+    setOpen(true);
+    try {
+      const res = await fetch(`/api/clients/${clientId}/competitors/${competitor.id}/insights`, { method: "POST" });
+      if (!res.ok) return;
+      const data = await res.json() as { insights: CompetitorInsights };
+      setInsights(data.insights);
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  return (
+    <div className="border-b border-stoneLine">
+      <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 items-center py-3 group">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-ink truncate">{competitor.name}</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <button
+                onClick={analyze}
+                disabled={analyzing}
+                className="flex items-center gap-1 text-[10px] text-gm-orange hover:text-gm-orange/80 transition-colors disabled:opacity-50"
+              >
+                {analyzing ? <Loader2 size={9} className="animate-spin" /> : <Sparkles size={9} />}
+                {insights ? "Re-analyse reviews" : "Analyse reviews"}
+              </button>
+              {insights && (
+                <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-0.5 text-[10px] text-muted hover:text-ink transition-colors">
+                  {open ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                  {open ? "Hide" : "Show"} insights
+                </button>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={onRemove}
+            disabled={removing}
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted hover:text-red-500 shrink-0 ml-1"
+            title="Remove competitor"
+          >
+            {removing ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
+          </button>
+        </div>
+        <div className="w-20 text-right">
+          <span className="text-xs font-semibold text-ink">{count !== null ? count.toLocaleString("en-IN") : "—"}</span>
+          {ahead !== null && (
+            <p className={`text-[10px] ${ahead >= 0 ? "text-green-600" : "text-red-600"}`}>
+              {ahead >= 0 ? `+${ahead}` : ahead} vs you
+            </p>
+          )}
+        </div>
+        <span className="w-14 text-right text-xs text-ink">{rating !== null ? `${rating.toFixed(1)} ★` : "—"}</span>
+        <span className="w-24 text-right"><DeltaBadge delta={delta7d} /></span>
+        <span className="w-20"><MiniSparkline history={history} color="#52525b" /></span>
+      </div>
+      {open && (
+        <div className="pb-4 px-1">
+          {analyzing ? (
+            <div className="flex items-center gap-2 text-xs text-muted py-2">
+              <Loader2 size={12} className="animate-spin text-gm-orange" />
+              Reading reviews and extracting insights…
+            </div>
+          ) : insights ? (
+            <InsightsPanel insights={insights} />
+          ) : null}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -296,7 +440,6 @@ export function CompetitorIntel({
 
   const clientCount = data?.clientCount ?? null;
   const clientRating = data?.clientRating ?? null;
-  // Use competitors as source-of-truth for rows; merge in snapshot data when available
   const entries = competitors.map((comp) => {
     const found = data?.competitorData?.find((e) => e.competitor.id === comp.id);
     return found ?? { competitor: comp, count: null, rating: null, delta7d: null, history: [] as HistoryPoint[] };
@@ -308,87 +451,50 @@ export function CompetitorIntel({
         Competitor review tracking
       </p>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[520px] border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-stoneLine text-left text-[11px] uppercase tracking-[0.14em] text-muted">
-              <th className="py-2 pr-4">Name</th>
-              <th className="py-2 pr-4">Reviews</th>
-              <th className="py-2 pr-4">Rating</th>
-              <th className="py-2 pr-4">7-day change</th>
-              <th className="py-2">Trend (30d)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* Client row */}
-            <tr className="border-b border-stoneLine bg-gm-orange/[0.07]">
-              <td className="py-3 pr-4 font-semibold text-gm-orange">
-                {clientName} <span className="text-[10px] font-normal text-muted">(you)</span>
-              </td>
-              <td className="py-3 pr-4 font-semibold text-ink">
-                {clientCount !== null ? clientCount.toLocaleString("en-IN") : "—"}
-              </td>
-              <td className="py-3 pr-4">
-                {clientRating !== null ? `${clientRating.toFixed(1)} ★` : "—"}
-              </td>
-              <td className="py-3 pr-4 text-xs text-muted">—</td>
-              <td className="py-3 text-xs text-muted">—</td>
-            </tr>
+      <div className="grid gap-0">
+        {/* Header */}
+        <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 border-b border-stoneLine pb-2 text-[11px] uppercase tracking-[0.14em] text-muted">
+          <span>Name</span>
+          <span className="w-20 text-right">Reviews</span>
+          <span className="w-14 text-right">Rating</span>
+          <span className="w-24 text-right">7-day</span>
+          <span className="w-20">Trend</span>
+        </div>
 
-            {entries.map(({ competitor, count, rating, delta7d, history }) => {
-              const ahead =
-                clientCount !== null && count !== null
-                  ? clientCount - count
-                  : null;
-              return (
-                <tr key={competitor.id} className="border-b border-stoneLine hover:bg-ivory/60 transition-colors group">
-                  <td className="py-3 pr-4">
-                    <div className="flex items-center gap-2">
-                      <div>
-                        <p className="text-xs font-semibold text-ink">{competitor.name}</p>
-                        {competitor.note && (
-                          <p className="text-[10px] text-muted">{competitor.note}</p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => remove(competitor.id)}
-                        disabled={removing === competitor.id}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted hover:text-red-500 shrink-0"
-                        title="Remove competitor"
-                      >
-                        {removing === competitor.id ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
-                      </button>
-                    </div>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <span className="text-xs font-semibold text-ink">
-                      {count !== null ? count.toLocaleString("en-IN") : "—"}
-                    </span>
-                    {ahead !== null && (
-                      <p className={`text-[10px] ${ahead >= 0 ? "text-green-600" : "text-red-600"}`}>
-                        {ahead >= 0 ? `+${ahead}` : ahead} vs you
-                      </p>
-                    )}
-                  </td>
-                  <td className="py-3 pr-4 text-xs text-ink">
-                    {rating !== null ? `${rating.toFixed(1)} ★` : "—"}
-                  </td>
-                  <td className="py-3 pr-4">
-                    <DeltaBadge delta={delta7d} />
-                  </td>
-                  <td className="py-3">
-                    <MiniSparkline history={history} color="#52525b" />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        {/* Client row */}
+        <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 items-center border-b border-stoneLine py-3 bg-gm-orange/[0.04] px-2 -mx-2">
+          <span className="text-xs font-semibold text-gm-orange">
+            {clientName} <span className="text-[10px] font-normal text-muted">(you)</span>
+          </span>
+          <span className="w-20 text-right text-xs font-semibold text-ink">
+            {clientCount !== null ? clientCount.toLocaleString("en-IN") : "—"}
+          </span>
+          <span className="w-14 text-right text-xs text-ink">
+            {clientRating !== null ? `${clientRating.toFixed(1)} ★` : "—"}
+          </span>
+          <span className="w-24 text-right text-xs text-muted">—</span>
+          <span className="w-20 text-xs text-muted">—</span>
+        </div>
+
+        {entries.map(({ competitor, count, rating, delta7d, history }) => (
+          <CompetitorRow
+            key={competitor.id}
+            clientId={clientId}
+            competitor={competitor}
+            count={count}
+            rating={rating}
+            delta7d={delta7d}
+            history={history}
+            clientCount={clientCount}
+            removing={removing === competitor.id}
+            onRemove={() => remove(competitor.id)}
+          />
+        ))}
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3">
         <p className="text-[11px] text-muted">
-          Snapshots pulled daily via Google Places API · 30-day window shown ·{" "}
+          Snapshots pulled daily · reviews analysed from Google Places ·{" "}
           <span className="text-red-600">↑</span> means competitor gaining reviews faster
         </p>
         <button

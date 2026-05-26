@@ -10,7 +10,8 @@ export type AITask =
   | "post_performance_tagging"
   | "prompt_enhancement"
   | "video_script"
-  | "niche_detection";
+  | "niche_detection"
+  | "competitor_review_analysis";
 
 // Primary model (Gemini) per task
 export const MODEL_ROUTING: Record<AITask, string> = {
@@ -24,6 +25,7 @@ export const MODEL_ROUTING: Record<AITask, string> = {
   prompt_enhancement: env.geminiProModel,
   video_script: env.geminiFlashModel,
   niche_detection: env.geminiLiteModel,
+  competitor_review_analysis: env.geminiFlashModel,
 };
 
 // Tasks that fall back to Claude when Gemini fails

@@ -313,11 +313,23 @@ export interface ReviewCountSnapshot {
   snapshotDate: string; // YYYY-MM-DD
 }
 
+export interface CompetitorInsights {
+  popularServices: string[];
+  popularProducts: string[];
+  starEmployees: string[];
+  pros: string[];
+  cons: string[];
+  summary: string;
+  reviewsAnalyzed: number;
+  analyzedAt: string;
+}
+
 export interface Competitor {
   id: string;
   name: string;
   placeId: string;
   note?: string;
+  insights?: CompetitorInsights;
 }
 
 export interface CompetitorSnapshot {

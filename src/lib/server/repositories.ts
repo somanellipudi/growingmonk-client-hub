@@ -226,6 +226,22 @@ export async function addCompetitor(clientId: string, competitor: { name: string
   return db.clients[index]!.competitors;
 }
 
+export async function saveCompetitorInsights(
+  clientId: string,
+  competitorId: string,
+  insights: import("@/types").CompetitorInsights
+) {
+  const db = await readDb();
+  const clientIdx = db.clients.findIndex((c) => c.id === clientId);
+  if (clientIdx === -1) throw new Error("Client not found");
+  const competitors = db.clients[clientIdx]!.competitors ?? [];
+  const compIdx = competitors.findIndex((c) => c.id === competitorId);
+  if (compIdx === -1) throw new Error("Competitor not found");
+  competitors[compIdx] = { ...competitors[compIdx]!, insights };
+  db.clients[clientIdx] = { ...db.clients[clientIdx]!, competitors };
+  await writeDb(db);
+}
+
 export async function saveDeepAnalysis(clientId: string, analysis: DeepAnalysis) {
   const db = await readDb();
   const index = db.clients.findIndex((c) => c.id === clientId);

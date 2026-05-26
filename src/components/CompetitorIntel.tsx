@@ -254,7 +254,11 @@ export function CompetitorIntel({
 
   const clientCount = data?.clientCount ?? null;
   const clientRating = data?.clientRating ?? null;
-  const entries = data?.competitorData ?? [];
+  // Use competitors as source-of-truth for rows; merge in snapshot data when available
+  const entries = competitors.map((comp) => {
+    const found = data?.competitorData?.find((e) => e.competitor.id === comp.id);
+    return found ?? { competitor: comp, count: null, rating: null, delta7d: null, history: [] as HistoryPoint[] };
+  });
 
   return (
     <div>

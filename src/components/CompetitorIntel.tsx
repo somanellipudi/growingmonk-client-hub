@@ -62,6 +62,7 @@ function DiscoverCompetitors({ clientId, onAdded, onDone }: { clientId: string; 
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState<string | null>(null);
   const [added, setAdded] = useState<Set<string>>(new Set());
+  const [loadingMore, setLoadingMore] = useState(false);
 
   async function discover() {
     setState("loading");
@@ -73,6 +74,20 @@ function DiscoverCompetitors({ clientId, onAdded, onDone }: { clientId: string; 
       setState("done");
     } catch {
       setState("error");
+    }
+  }
+
+  async function findMore() {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const shownIds = suggestions.map((s) => s.placeId).join(",");
+      const res = await fetch(`/api/clients/${clientId}/competitors/suggest?exclude=${encodeURIComponent(shownIds)}`);
+      const data = await res.json() as { suggestions: CompetitorSuggestion[]; query: string };
+      const newOnes = (data.suggestions ?? []).filter((s) => !suggestions.some((e) => e.placeId === s.placeId));
+      setSuggestions((prev) => [...prev, ...newOnes]);
+    } finally {
+      setLoadingMore(false);
     }
   }
 
@@ -177,6 +192,14 @@ function DiscoverCompetitors({ clientId, onAdded, onDone }: { clientId: string; 
             <p className="text-xs text-muted">No nearby businesses found. Add competitors manually in client settings.</p>
           )}
         </div>
+        <button
+          onClick={findMore}
+          disabled={loadingMore}
+          className="flex items-center gap-1.5 text-[11px] font-semibold text-gm-orange hover:text-gm-orange/80 transition-colors disabled:opacity-50"
+        >
+          {loadingMore ? <Loader2 size={11} className="animate-spin" /> : <Search size={11} />}
+          {loadingMore ? "Searching…" : "Find more"}
+        </button>
       )}
     </div>
   );

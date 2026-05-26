@@ -227,7 +227,7 @@ async function textSearch(query: string, lat: number, lng: number, apiKey: strin
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   const client = await getClient(params.id);
@@ -321,9 +321,12 @@ export async function GET(
   }
 
   const clientNameLower = client.name.toLowerCase();
+  const excludeParam = new URL(request.url).searchParams.get("exclude") ?? "";
+  const excludeIds = excludeParam ? excludeParam.split(",").filter(Boolean) : [];
   const existingPlaceIds = new Set([
     ...(client.competitors ?? []).map((c) => c.placeId),
     ...(clientPlaceId ? [clientPlaceId] : []),
+    ...excludeIds,
   ]);
 
   // First pass: basic name filter + de-dupe

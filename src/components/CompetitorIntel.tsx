@@ -129,9 +129,14 @@ function DiscoverCompetitors({ clientId, onAdded }: { clientId: string; onAdded:
                   <p className="text-xs font-semibold text-ink truncate">{s.name}</p>
                   <p className="text-[10px] text-muted truncate">{s.address}</p>
                 </div>
-                {s.rating !== null && (
-                  <span className="text-[10px] text-muted shrink-0">{s.rating.toFixed(1)} ★ · {s.reviewCount?.toLocaleString("en-IN")} reviews</span>
-                )}
+                <div className="text-right shrink-0 grid gap-0.5">
+                  {s.rating !== null && (
+                    <span className="text-[10px] text-muted">{s.rating.toFixed(1)} ★ · {s.reviewCount?.toLocaleString("en-IN")} reviews</span>
+                  )}
+                  {s.distanceKm !== null && (
+                    <span className="text-[10px] text-muted">{s.distanceKm} km away</span>
+                  )}
+                </div>
                 <button
                   onClick={() => add(s)}
                   disabled={!!adding || added.has(s.placeId)}

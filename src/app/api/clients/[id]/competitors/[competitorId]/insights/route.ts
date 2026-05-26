@@ -88,7 +88,12 @@ Return JSON with specific, actionable insights (empty array [] if nothing found)
     analyzedAt: new Date().toISOString(),
   };
 
-  await saveCompetitorInsights(params.id, params.competitorId, result);
+  try {
+    await saveCompetitorInsights(params.id, params.competitorId, result);
+  } catch (err) {
+    console.error("Failed to persist competitor insights:", err);
+    // Return insights to client even if save fails — they can re-analyse later
+  }
 
   return NextResponse.json({ insights: result });
 }

@@ -109,7 +109,7 @@ function InsightsPanel({ insights }: { insights: CompetitorInsights }) {
 }
 
 function CompetitorRow({
-  clientId, competitor, count, rating, delta7d, history, clientCount, removing, onRemove,
+  clientId, competitor, count, rating, delta7d, history, clientCount, removing, onRemove, onInsightsUpdated,
 }: {
   clientId: string;
   competitor: Competitor;
@@ -120,8 +120,9 @@ function CompetitorRow({
   clientCount: number | null;
   removing: boolean;
   onRemove: () => void;
+  onInsightsUpdated: (competitorId: string, insights: CompetitorInsights) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(!!competitor.insights);
   const [analyzing, setAnalyzing] = useState(false);
   const [insights, setInsights] = useState<CompetitorInsights | null>(competitor.insights ?? null);
 
@@ -135,6 +136,7 @@ function CompetitorRow({
       if (!res.ok) return;
       const data = await res.json() as { insights: CompetitorInsights };
       setInsights(data.insights);
+      onInsightsUpdated(competitor.id, data.insights);
     } finally {
       setAnalyzing(false);
     }
@@ -488,6 +490,9 @@ export function CompetitorIntel({
             clientCount={clientCount}
             removing={removing === competitor.id}
             onRemove={() => remove(competitor.id)}
+            onInsightsUpdated={(compId, insights) => {
+              setCompetitors((prev) => prev.map((c) => c.id === compId ? { ...c, insights } : c));
+            }}
           />
         ))}
       </div>

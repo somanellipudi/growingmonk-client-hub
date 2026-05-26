@@ -56,7 +56,7 @@ function DeltaBadge({ delta }: { delta: number | null }) {
   );
 }
 
-function DiscoverCompetitors({ clientId, onAdded }: { clientId: string; onAdded: (name: string, comp: Competitor) => void }) {
+function DiscoverCompetitors({ clientId, onAdded, onDone }: { clientId: string; onAdded: (name: string, comp: Competitor) => void; onDone: () => void }) {
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [suggestions, setSuggestions] = useState<CompetitorSuggestion[]>([]);
   const [query, setQuery] = useState("");
@@ -77,6 +77,7 @@ function DiscoverCompetitors({ clientId, onAdded }: { clientId: string; onAdded:
   }
 
   async function add(suggestion: CompetitorSuggestion) {
+    if (adding === suggestion.placeId || added.has(suggestion.placeId)) return;
     setAdding(suggestion.placeId);
     try {
       const res = await fetch(`/api/clients/${clientId}/competitors`, {
@@ -84,9 +85,11 @@ function DiscoverCompetitors({ clientId, onAdded }: { clientId: string; onAdded:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: suggestion.name, placeId: suggestion.placeId }),
       });
+      if (!res.ok) return;
       const data = await res.json() as { competitors?: Competitor[] };
-      const added = data.competitors?.find((c) => c.placeId === suggestion.placeId);
-      if (added) onAdded(suggestion.name, added);
+      const newComp = data.competitors?.find((c) => c.placeId === suggestion.placeId)
+        ?? { id: `comp_${Date.now()}`, name: suggestion.name, placeId: suggestion.placeId };
+      onAdded(suggestion.name, newComp);
       setAdded((prev) => new Set([...prev, suggestion.placeId]));
     } finally {
       setAdding(null);
@@ -122,33 +125,48 @@ function DiscoverCompetitors({ clientId, onAdded }: { clientId: string; onAdded:
 
       {state === "done" && (
         <div className="grid gap-3">
-          <p className="text-[11px] text-muted">Showing nearby results for <span className="font-semibold italic">{query}</span></p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] text-muted">Nearby results for <span className="font-semibold italic">{query}</span></p>
+            {added.size > 0 && (
+              <button onClick={onDone} className="text-[11px] font-semibold text-gm-orange hover:text-gm-orange/80">
+                Done ({added.size} added) →
+              </button>
+            )}
+          </div>
           <div className="grid gap-2">
-            {suggestions.map((s) => (
-              <div key={s.placeId} className="flex items-center gap-3 bg-white border border-stoneLine px-3 py-2">
-                <MapPin size={12} className="text-muted shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-ink truncate">{s.name}</p>
-                  <p className="text-[10px] text-muted truncate">{s.address}</p>
+            {suggestions.map((s) => {
+              const isAdded = added.has(s.placeId);
+              const isAdding = adding === s.placeId;
+              return (
+                <div key={s.placeId} className={`flex items-center gap-3 border px-3 py-2 ${isAdded ? "bg-green-50 border-green-200" : "bg-white border-stoneLine"}`}>
+                  <MapPin size={12} className="text-muted shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-ink truncate">{s.name}</p>
+                    <p className="text-[10px] text-muted truncate">{s.address}</p>
+                  </div>
+                  <div className="text-right shrink-0 grid gap-0.5">
+                    {s.rating !== null && (
+                      <span className="text-[10px] text-muted">{s.rating.toFixed(1)} ★ · {s.reviewCount?.toLocaleString("en-IN")} reviews</span>
+                    )}
+                    {s.distanceKm !== null && (
+                      <span className="text-[10px] text-muted">{s.distanceKm} km away</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => add(s)}
+                    disabled={isAdded || isAdding}
+                    className={`shrink-0 flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold border transition-colors ${
+                      isAdded
+                        ? "border-green-300 text-green-700 bg-green-50"
+                        : "border-stoneLine text-ink hover:bg-ivory"
+                    } disabled:cursor-default`}
+                  >
+                    {isAdding ? <Loader2 size={10} className="animate-spin" /> : isAdded ? "✓" : <Plus size={10} />}
+                    {isAdded ? "Added" : "Add"}
+                  </button>
                 </div>
-                <div className="text-right shrink-0 grid gap-0.5">
-                  {s.rating !== null && (
-                    <span className="text-[10px] text-muted">{s.rating.toFixed(1)} ★ · {s.reviewCount?.toLocaleString("en-IN")} reviews</span>
-                  )}
-                  {s.distanceKm !== null && (
-                    <span className="text-[10px] text-muted">{s.distanceKm} km away</span>
-                  )}
-                </div>
-                <button
-                  onClick={() => add(s)}
-                  disabled={!!adding || added.has(s.placeId)}
-                  className="shrink-0 flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold border border-stoneLine text-ink hover:bg-ivory disabled:opacity-50 transition-colors"
-                >
-                  {adding === s.placeId ? <Loader2 size={10} className="animate-spin" /> : <Plus size={10} />}
-                  {added.has(s.placeId) ? "Added" : "Add"}
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
           {suggestions.length === 0 && (
             <p className="text-xs text-muted">No nearby businesses found. Add competitors manually in client settings.</p>
@@ -198,19 +216,21 @@ export function CompetitorIntel({
   }
 
   if (competitors.length === 0 && !showDiscover) {
-    return <DiscoverCompetitors clientId={clientId} onAdded={(name, comp) => {
-      setCompetitors((prev) => [...prev, comp]);
-      setShowDiscover(false);
-    }} />;
+    return <DiscoverCompetitors
+      clientId={clientId}
+      onAdded={(name, comp) => setCompetitors((prev) => [...prev, comp])}
+      onDone={() => setShowDiscover(false)}
+    />;
   }
 
   if (showDiscover) {
     return (
-      <div className="grid gap-3">
-        <DiscoverCompetitors clientId={clientId} onAdded={(name, comp) => {
-          setCompetitors((prev) => [...prev, comp]);
-          setShowDiscover(false);
-        }} />
+      <div className="grid gap-2">
+        <DiscoverCompetitors
+          clientId={clientId}
+          onAdded={(name, comp) => setCompetitors((prev) => [...prev, comp])}
+          onDone={() => setShowDiscover(false)}
+        />
         <button onClick={() => setShowDiscover(false)} className="text-xs text-muted hover:text-ink text-left px-1">← Back to tracking</button>
       </div>
     );

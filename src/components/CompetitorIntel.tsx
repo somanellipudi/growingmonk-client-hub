@@ -390,13 +390,14 @@ export function CompetitorIntel({
   const [removing, setRemoving] = useState<string | null>(null);
   const [showDiscover, setShowDiscover] = useState(false);
 
-  useEffect(() => {
+  const fetchData = () =>
     fetch(`/api/clients/${clientId}/competitors`)
-      .then((r) => r.json())
-      .then((d: ApiResponse) => setData(d))
+      .then((r) => r.json() as Promise<ApiResponse>)
+      .then((d) => setData(d))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [clientId]);
+
+  useEffect(() => { fetchData(); }, [clientId]);
 
   async function remove(competitorId: string) {
     setRemoving(competitorId);
@@ -415,17 +416,17 @@ export function CompetitorIntel({
 
   function handleAdded(name: string, comp: Competitor, rating: number | null, reviewCount: number | null) {
     setCompetitors((prev) => prev.some((c) => c.id === comp.id) ? prev : [...prev, comp]);
+    const newEntry = { competitor: comp, count: reviewCount, rating, delta7d: null, history: [] as HistoryPoint[] };
     setData((prev) => {
-      if (!prev) return prev;
+      if (!prev) {
+        // data fetch not yet complete — seed a minimal state so the row shows immediately
+        return { competitorData: [newEntry], clientCount: null, clientRating: null };
+      }
       if (prev.competitorData.some((e) => e.competitor.id === comp.id)) return prev;
-      return {
-        ...prev,
-        competitorData: [
-          ...prev.competitorData,
-          { competitor: comp, count: reviewCount, rating, delta7d: null, history: [] },
-        ],
-      };
+      return { ...prev, competitorData: [...prev.competitorData, newEntry] };
     });
+    // Background refresh to sync server state (snapshot data, etc.)
+    setTimeout(() => fetchData(), 1500);
   }
 
   if (competitors.length === 0 && !showDiscover) {
@@ -449,7 +450,7 @@ export function CompetitorIntel({
     );
   }
 
-  if (loading) {
+  if (loading && competitors.length === 0) {
     return (
       <div className="border border-stoneLine bg-ivory p-4">
         <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted mb-2">

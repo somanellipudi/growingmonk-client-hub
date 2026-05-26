@@ -56,12 +56,36 @@ function DeltaBadge({ delta }: { delta: number | null }) {
   );
 }
 
-function InsightsPanel({ insights }: { insights: CompetitorInsights }) {
+function InsightsPanel({ insights, onReanalyse, onMinimize, analysing }: {
+  insights: CompetitorInsights;
+  onReanalyse: () => void;
+  onMinimize: () => void;
+  analysing: boolean;
+}) {
   const Tag = ({ text }: { text: string }) => (
     <span className="inline-block bg-stone-100 text-ink text-[10px] px-2 py-0.5 rounded-sm">{text}</span>
   );
   return (
     <div className="grid gap-3 pt-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[10px] text-muted">Based on {insights.reviewsAnalyzed} reviews · {new Date(insights.analyzedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={onReanalyse}
+            disabled={analysing}
+            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold border border-stoneLine text-ink hover:bg-ivory transition-colors disabled:opacity-50"
+          >
+            {analysing ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+            {analysing ? "Analysing…" : "Re-run"}
+          </button>
+          <button
+            onClick={onMinimize}
+            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold border border-stoneLine text-ink hover:bg-ivory transition-colors"
+          >
+            <ChevronUp size={10} /> Minimise
+          </button>
+        </div>
+      </div>
       {insights.summary && (
         <p className="text-[11px] text-ink leading-5 italic">{insights.summary}</p>
       )}
@@ -103,7 +127,6 @@ function InsightsPanel({ insights }: { insights: CompetitorInsights }) {
           </div>
         )}
       </div>
-      <p className="text-[10px] text-muted">Based on {insights.reviewsAnalyzed} reviews · analysed {new Date(insights.analyzedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
     </div>
   );
 }
@@ -148,22 +171,14 @@ function CompetitorRow({
         <div className="flex items-center gap-2 min-w-0">
           <div className="min-w-0">
             <p className="text-xs font-semibold text-ink truncate">{competitor.name}</p>
-            <div className="flex items-center gap-2 mt-0.5">
-              <button
-                onClick={analyze}
-                disabled={analyzing}
-                className="flex items-center gap-1 text-[10px] text-gm-orange hover:text-gm-orange/80 transition-colors disabled:opacity-50"
-              >
-                {analyzing ? <Loader2 size={9} className="animate-spin" /> : <Sparkles size={9} />}
-                {insights ? "Re-analyse reviews" : "Analyse reviews"}
-              </button>
-              {insights && (
-                <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-0.5 text-[10px] text-muted hover:text-ink transition-colors">
-                  {open ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-                  {open ? "Hide" : "Show"} insights
-                </button>
-              )}
-            </div>
+            <button
+              onClick={insights ? () => setOpen((o) => !o) : analyze}
+              disabled={analyzing}
+              className="flex items-center gap-1 mt-0.5 text-[10px] text-gm-orange hover:text-gm-orange/80 transition-colors disabled:opacity-50"
+            >
+              {analyzing ? <Loader2 size={9} className="animate-spin" /> : <Sparkles size={9} />}
+              {analyzing ? "Analysing…" : insights ? (open ? "Hide insights" : "Show insights") : "Analyse reviews"}
+            </button>
           </div>
           <button
             onClick={onRemove}
@@ -194,7 +209,12 @@ function CompetitorRow({
               Reading reviews and extracting insights…
             </div>
           ) : insights ? (
-            <InsightsPanel insights={insights} />
+            <InsightsPanel
+              insights={insights}
+              analysing={analyzing}
+              onReanalyse={analyze}
+              onMinimize={() => setOpen(false)}
+            />
           ) : null}
         </div>
       )}

@@ -83,7 +83,12 @@ function DiscoverCompetitors({ clientId, onAdded, onDone }: { clientId: string; 
       const res = await fetch(`/api/clients/${clientId}/competitors`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: suggestion.name, placeId: suggestion.placeId }),
+        body: JSON.stringify({
+          name: suggestion.name,
+          placeId: suggestion.placeId,
+          rating: suggestion.rating,
+          reviewCount: suggestion.reviewCount,
+        }),
       });
       if (!res.ok) return;
       const data = await res.json() as { competitors?: Competitor[] };

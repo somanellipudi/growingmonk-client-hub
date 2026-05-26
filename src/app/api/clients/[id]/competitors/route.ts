@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getClient, getAllCompetitorSnapshots, addCompetitor, removeCompetitor } from "@/lib/server/repositories";
+import { getClient, getAllCompetitorSnapshots, addCompetitor, removeCompetitor, saveCompetitorSnapshot } from "@/lib/server/repositories";
 
 export const dynamic = "force-dynamic";
 
@@ -37,9 +37,20 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { name, placeId, note } = await request.json() as { name: string; placeId: string; note?: string };
+    const { name, placeId, note, rating, reviewCount } = await request.json() as {
+      name: string;
+      placeId: string;
+      note?: string;
+      rating?: number | null;
+      reviewCount?: number | null;
+    };
     if (!name || !placeId) return NextResponse.json({ error: "name and placeId required" }, { status: 400 });
     const competitors = await addCompetitor(params.id, { name, placeId, note });
+    // Seed initial snapshot so data shows immediately without waiting for daily cron
+    const newComp = (competitors ?? []).find((c) => c.placeId === placeId);
+    if (newComp && reviewCount != null && rating != null) {
+      await saveCompetitorSnapshot(params.id, newComp.id, name, reviewCount, rating);
+    }
     return NextResponse.json({ competitors });
   } catch {
     return NextResponse.json({ error: "Failed to add competitor" }, { status: 500 });

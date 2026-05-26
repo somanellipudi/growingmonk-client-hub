@@ -195,15 +195,15 @@ function DiscoverCompetitors({ clientId, onAdded, onDone }: {
           {suggestions.length === 0 && (
             <p className="text-xs text-muted">No nearby businesses found. Add competitors manually in client settings.</p>
           )}
+          <button
+            onClick={findMore}
+            disabled={loadingMore}
+            className="flex items-center gap-1.5 text-[11px] font-semibold text-gm-orange hover:text-gm-orange/80 transition-colors disabled:opacity-50"
+          >
+            {loadingMore ? <Loader2 size={11} className="animate-spin" /> : <Search size={11} />}
+            {loadingMore ? "Searching…" : "Find more"}
+          </button>
         </div>
-        <button
-          onClick={findMore}
-          disabled={loadingMore}
-          className="flex items-center gap-1.5 text-[11px] font-semibold text-gm-orange hover:text-gm-orange/80 transition-colors disabled:opacity-50"
-        >
-          {loadingMore ? <Loader2 size={11} className="animate-spin" /> : <Search size={11} />}
-          {loadingMore ? "Searching…" : "Find more"}
-        </button>
       )}
     </div>
   );

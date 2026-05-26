@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getClient, getAllCompetitorSnapshots, addCompetitor } from "@/lib/server/repositories";
+import { getClient, getAllCompetitorSnapshots, addCompetitor, removeCompetitor } from "@/lib/server/repositories";
 
 export const dynamic = "force-dynamic";
 
@@ -43,5 +43,19 @@ export async function POST(
     return NextResponse.json({ competitors });
   } catch {
     return NextResponse.json({ error: "Failed to add competitor" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { competitorId } = await request.json() as { competitorId: string };
+    if (!competitorId) return NextResponse.json({ error: "competitorId required" }, { status: 400 });
+    await removeCompetitor(params.id, competitorId);
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "Failed to remove competitor" }, { status: 500 });
   }
 }

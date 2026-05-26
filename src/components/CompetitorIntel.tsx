@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, MapPin, Plus, Search } from "lucide-react";
+import { Loader2, MapPin, Plus, Search, Trash2 } from "lucide-react";
 import type { Competitor } from "@/types";
 import type { CompetitorSuggestion } from "@/app/api/clients/[id]/competitors/suggest/route";
 
@@ -56,7 +56,7 @@ function DeltaBadge({ delta }: { delta: number | null }) {
   );
 }
 
-function DiscoverCompetitors({ clientId, onAdded }: { clientId: string; onAdded: (name: string) => void }) {
+function DiscoverCompetitors({ clientId, onAdded }: { clientId: string; onAdded: (name: string, comp: Competitor) => void }) {
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [suggestions, setSuggestions] = useState<CompetitorSuggestion[]>([]);
   const [query, setQuery] = useState("");
@@ -79,13 +79,15 @@ function DiscoverCompetitors({ clientId, onAdded }: { clientId: string; onAdded:
   async function add(suggestion: CompetitorSuggestion) {
     setAdding(suggestion.placeId);
     try {
-      await fetch(`/api/clients/${clientId}/competitors`, {
+      const res = await fetch(`/api/clients/${clientId}/competitors`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: suggestion.name, placeId: suggestion.placeId }),
       });
+      const data = await res.json() as { competitors?: Competitor[] };
+      const added = data.competitors?.find((c) => c.placeId === suggestion.placeId);
+      if (added) onAdded(suggestion.name, added);
       setAdded((prev) => new Set([...prev, suggestion.placeId]));
-      onAdded(suggestion.name);
     } finally {
       setAdding(null);
     }
@@ -160,15 +162,17 @@ function DiscoverCompetitors({ clientId, onAdded }: { clientId: string; onAdded:
 export function CompetitorIntel({
   clientId,
   clientName,
-  competitors,
+  competitors: initialCompetitors,
 }: {
   clientId: string;
   clientName: string;
   competitors: Competitor[];
 }) {
+  const [competitors, setCompetitors] = useState<Competitor[]>(initialCompetitors);
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [addedNames, setAddedNames] = useState<string[]>([]);
+  const [removing, setRemoving] = useState<string | null>(null);
+  const [showDiscover, setShowDiscover] = useState(false);
 
   useEffect(() => {
     fetch(`/api/clients/${clientId}/competitors`)
@@ -178,17 +182,36 @@ export function CompetitorIntel({
       .finally(() => setLoading(false));
   }, [clientId]);
 
-  if (competitors.length === 0 && addedNames.length === 0) {
-    return <DiscoverCompetitors clientId={clientId} onAdded={(name) => setAddedNames((prev) => [...prev, name])} />;
+  async function remove(competitorId: string) {
+    setRemoving(competitorId);
+    try {
+      await fetch(`/api/clients/${clientId}/competitors`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ competitorId }),
+      });
+      setCompetitors((prev) => prev.filter((c) => c.id !== competitorId));
+      setData((prev) => prev ? { ...prev, competitorData: prev.competitorData.filter((e) => e.competitor.id !== competitorId) } : prev);
+    } finally {
+      setRemoving(null);
+    }
   }
 
-  if (competitors.length === 0 && addedNames.length > 0) {
+  if (competitors.length === 0 && !showDiscover) {
+    return <DiscoverCompetitors clientId={clientId} onAdded={(name, comp) => {
+      setCompetitors((prev) => [...prev, comp]);
+      setShowDiscover(false);
+    }} />;
+  }
+
+  if (showDiscover) {
     return (
-      <div className="border border-stoneLine bg-ivory p-4">
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted mb-2">Competitor tracking</p>
-        <p className="text-xs text-muted leading-5">
-          Added: {addedNames.join(", ")}. Reload the page to see tracking data — snapshots will begin pulling on the next sync.
-        </p>
+      <div className="grid gap-3">
+        <DiscoverCompetitors clientId={clientId} onAdded={(name, comp) => {
+          setCompetitors((prev) => [...prev, comp]);
+          setShowDiscover(false);
+        }} />
+        <button onClick={() => setShowDiscover(false)} className="text-xs text-muted hover:text-ink text-left px-1">← Back to tracking</button>
       </div>
     );
   }
@@ -247,12 +270,24 @@ export function CompetitorIntel({
                   ? clientCount - count
                   : null;
               return (
-                <tr key={competitor.id} className="border-b border-stoneLine hover:bg-ivory/60 transition-colors">
+                <tr key={competitor.id} className="border-b border-stoneLine hover:bg-ivory/60 transition-colors group">
                   <td className="py-3 pr-4">
-                    <p className="text-xs font-semibold text-ink">{competitor.name}</p>
-                    {competitor.note && (
-                      <p className="text-[10px] text-muted">{competitor.note}</p>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <div>
+                        <p className="text-xs font-semibold text-ink">{competitor.name}</p>
+                        {competitor.note && (
+                          <p className="text-[10px] text-muted">{competitor.note}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => remove(competitor.id)}
+                        disabled={removing === competitor.id}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted hover:text-red-500 shrink-0"
+                        title="Remove competitor"
+                      >
+                        {removing === competitor.id ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
+                      </button>
+                    </div>
                   </td>
                   <td className="py-3 pr-4">
                     <span className="text-xs font-semibold text-ink">
@@ -280,10 +315,18 @@ export function CompetitorIntel({
         </table>
       </div>
 
-      <p className="mt-3 text-[11px] text-muted">
-        Snapshots pulled daily via Google Places API · 30-day window shown ·{" "}
-        <span className="text-red-600">↑</span> means competitor gaining reviews faster
-      </p>
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <p className="text-[11px] text-muted">
+          Snapshots pulled daily via Google Places API · 30-day window shown ·{" "}
+          <span className="text-red-600">↑</span> means competitor gaining reviews faster
+        </p>
+        <button
+          onClick={() => setShowDiscover(true)}
+          className="flex items-center gap-1 shrink-0 text-[11px] font-semibold text-gm-orange hover:text-gm-orange/80 transition-colors"
+        >
+          <Plus size={11} /> Add more
+        </button>
+      </div>
     </div>
   );
 }

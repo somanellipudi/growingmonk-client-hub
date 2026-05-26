@@ -203,6 +203,17 @@ export async function setPortalEnabled(clientId: string, enabled: boolean) {
   await writeDb(db);
 }
 
+export async function removeCompetitor(clientId: string, competitorId: string) {
+  const db = await readDb();
+  const index = db.clients.findIndex((c) => c.id === clientId);
+  if (index === -1) throw new Error("Client not found");
+  db.clients[index] = {
+    ...db.clients[index]!,
+    competitors: (db.clients[index]!.competitors ?? []).filter((c) => c.id !== competitorId),
+  };
+  await writeDb(db);
+}
+
 export async function addCompetitor(clientId: string, competitor: { name: string; placeId: string; note?: string }) {
   const db = await readDb();
   const index = db.clients.findIndex((c) => c.id === clientId);

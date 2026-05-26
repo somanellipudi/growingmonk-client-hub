@@ -46,13 +46,18 @@ export async function POST(
     };
     if (!name || !placeId) return NextResponse.json({ error: "name and placeId required" }, { status: 400 });
     const competitors = await addCompetitor(params.id, { name, placeId, note });
-    // Seed initial snapshot so data shows immediately without waiting for daily cron
+    // Seed initial snapshot — isolated so a failure here never blocks the add
     const newComp = (competitors ?? []).find((c) => c.placeId === placeId);
     if (newComp && reviewCount != null && rating != null) {
-      await saveCompetitorSnapshot(params.id, newComp.id, name, reviewCount, rating);
+      try {
+        await saveCompetitorSnapshot(params.id, newComp.id, name, reviewCount, rating);
+      } catch {
+        // non-fatal — data will populate on next daily snapshot run
+      }
     }
     return NextResponse.json({ competitors });
-  } catch {
+  } catch (err) {
+    console.error("Failed to add competitor:", err);
     return NextResponse.json({ error: "Failed to add competitor" }, { status: 500 });
   }
 }

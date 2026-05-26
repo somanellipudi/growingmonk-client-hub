@@ -56,7 +56,11 @@ function DeltaBadge({ delta }: { delta: number | null }) {
   );
 }
 
-function DiscoverCompetitors({ clientId, onAdded, onDone }: { clientId: string; onAdded: (name: string, comp: Competitor) => void; onDone: () => void }) {
+function DiscoverCompetitors({ clientId, onAdded, onDone }: {
+  clientId: string;
+  onAdded: (name: string, comp: Competitor, rating: number | null, reviewCount: number | null) => void;
+  onDone: () => void;
+}) {
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [suggestions, setSuggestions] = useState<CompetitorSuggestion[]>([]);
   const [query, setQuery] = useState("");
@@ -109,7 +113,7 @@ function DiscoverCompetitors({ clientId, onAdded, onDone }: { clientId: string; 
       const data = await res.json() as { competitors?: Competitor[] };
       const newComp = data.competitors?.find((c) => c.placeId === suggestion.placeId)
         ?? { id: `comp_${Date.now()}`, name: suggestion.name, placeId: suggestion.placeId };
-      onAdded(suggestion.name, newComp);
+      onAdded(suggestion.name, newComp, suggestion.rating, suggestion.reviewCount);
       setAdded((prev) => new Set([...prev, suggestion.placeId]));
     } finally {
       setAdding(null);
@@ -243,10 +247,25 @@ export function CompetitorIntel({
     }
   }
 
+  function handleAdded(name: string, comp: Competitor, rating: number | null, reviewCount: number | null) {
+    setCompetitors((prev) => prev.some((c) => c.id === comp.id) ? prev : [...prev, comp]);
+    setData((prev) => {
+      if (!prev) return prev;
+      if (prev.competitorData.some((e) => e.competitor.id === comp.id)) return prev;
+      return {
+        ...prev,
+        competitorData: [
+          ...prev.competitorData,
+          { competitor: comp, count: reviewCount, rating, delta7d: null, history: [] },
+        ],
+      };
+    });
+  }
+
   if (competitors.length === 0 && !showDiscover) {
     return <DiscoverCompetitors
       clientId={clientId}
-      onAdded={(name, comp) => setCompetitors((prev) => [...prev, comp])}
+      onAdded={handleAdded}
       onDone={() => setShowDiscover(false)}
     />;
   }
@@ -256,7 +275,7 @@ export function CompetitorIntel({
       <div className="grid gap-2">
         <DiscoverCompetitors
           clientId={clientId}
-          onAdded={(name, comp) => setCompetitors((prev) => [...prev, comp])}
+          onAdded={handleAdded}
           onDone={() => setShowDiscover(false)}
         />
         <button onClick={() => setShowDiscover(false)} className="text-xs text-muted hover:text-ink text-left px-1">← Back to tracking</button>

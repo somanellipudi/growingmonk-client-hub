@@ -90,7 +90,7 @@ async function textSearchLocation(query: string, apiKey: string): Promise<{ lat:
   return { lat: place.location.latitude, lng: place.location.longitude, placeId: place.id ?? "" };
 }
 
-async function nearbySearch(lat: number, lng: number, types: string[], apiKey: string): Promise<PlaceResult[]> {
+async function nearbySearch(lat: number, lng: number, types: string[], apiKey: string, radiusMeters = 5000): Promise<PlaceResult[]> {
   const res = await fetch("https://places.googleapis.com/v1/places:searchNearby", {
     method: "POST",
     headers: {
@@ -100,9 +100,9 @@ async function nearbySearch(lat: number, lng: number, types: string[], apiKey: s
     },
     body: JSON.stringify({
       includedTypes: types,
-      maxResultCount: 15,
+      maxResultCount: 20,
       locationRestriction: {
-        circle: { center: { latitude: lat, longitude: lng }, radius: 5000 },
+        circle: { center: { latitude: lat, longitude: lng }, radius: radiusMeters },
       },
       rankPreference: "DISTANCE",
     }),
@@ -204,7 +204,7 @@ async function plainTextSearch(query: string, apiKey: string): Promise<PlaceResu
   return data.places ?? [];
 }
 
-async function textSearch(query: string, lat: number, lng: number, apiKey: string): Promise<PlaceResult[]> {
+async function textSearch(query: string, lat: number, lng: number, apiKey: string, radiusMeters = 5000): Promise<PlaceResult[]> {
   const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
     method: "POST",
     headers: {
@@ -214,9 +214,9 @@ async function textSearch(query: string, lat: number, lng: number, apiKey: strin
     },
     body: JSON.stringify({
       textQuery: query,
-      maxResultCount: 15,
+      maxResultCount: 20,
       locationBias: {
-        circle: { center: { latitude: lat, longitude: lng }, radius: 5000 },
+        circle: { center: { latitude: lat, longitude: lng }, radius: radiusMeters },
       },
     }),
     cache: "no-store",
@@ -269,16 +269,22 @@ export async function GET(
 
   const searchQuery = `${nicheLabel} in ${client.city}`;
 
+  const excludeParam = new URL(request.url).searchParams.get("exclude") ?? "";
+  const excludeIds = excludeParam ? excludeParam.split(",").filter(Boolean) : [];
+  const isFindMore = excludeIds.length > 0;
+  // Wider radius + more results for "find more" requests
+  const searchRadius = isFindMore ? 15000 : 5000;
+
   let places: PlaceResult[] = [];
 
   if (clientLocation) {
     // Prefer nearby search (location-anchored, distance-sorted)
     if (types.length > 0) {
-      places = await nearbySearch(clientLocation.lat, clientLocation.lng, types, apiKey);
+      places = await nearbySearch(clientLocation.lat, clientLocation.lng, types, apiKey, searchRadius);
     }
     // Fallback or supplement with text search if types list gave too few results
     if (places.length < 5) {
-      const text = await textSearch(searchQuery, clientLocation.lat, clientLocation.lng, apiKey);
+      const text = await textSearch(searchQuery, clientLocation.lat, clientLocation.lng, apiKey, searchRadius);
       const existing = new Set(places.map((p) => p.id));
       places = [...places, ...text.filter((p) => !existing.has(p.id))];
     }
@@ -321,8 +327,6 @@ export async function GET(
   }
 
   const clientNameLower = client.name.toLowerCase();
-  const excludeParam = new URL(request.url).searchParams.get("exclude") ?? "";
-  const excludeIds = excludeParam ? excludeParam.split(",").filter(Boolean) : [];
   const existingPlaceIds = new Set([
     ...(client.competitors ?? []).map((c) => c.placeId),
     ...(clientPlaceId ? [clientPlaceId] : []),
@@ -335,10 +339,11 @@ export async function GET(
     return p.id && !existingPlaceIds.has(p.id) && !name.includes(clientNameLower);
   });
 
-  // Review count threshold — scale with client's own review count so small local shops
-  // are excluded when tracking a large chain (e.g. Jawed Habib with 1,415 reviews)
+  // Review count threshold — lower floor for "find more" to surface more options
   const clientReviews = client.gbpPlaceReviewCount ?? 0;
-  const minReviews = Math.max(50, Math.floor(clientReviews * 0.03));
+  const minReviews = isFindMore
+    ? Math.max(20, Math.floor(clientReviews * 0.01))
+    : Math.max(50, Math.floor(clientReviews * 0.03));
 
   const reviewFiltered = candidates.filter(
     (p) => p.userRatingCount === undefined || p.userRatingCount === null || p.userRatingCount >= minReviews

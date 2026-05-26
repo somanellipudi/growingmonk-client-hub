@@ -167,6 +167,43 @@ Return JSON: { "keep": ["placeId1", "placeId2", ...] }`
   }
 }
 
+async function suggestChainCompetitors(client: {
+  name: string;
+  niche: string;
+  nicheSubtype?: string | null;
+  city: string;
+}): Promise<string[]> {
+  try {
+    const result = await callGeminiJSON<{ chains: string[] }>(
+      "niche_detection",
+      "You are a business intelligence assistant. Respond with valid JSON only.",
+      `List the top 5 major competitor chains/brands for a business like "${client.name}" in ${client.city}, India.
+Business type: ${client.nicheSubtype || client.niche}
+Return only well-known national or regional Indian brands that customers would choose as a direct alternative. Exclude "${client.name}" itself.
+Return JSON: { "chains": ["Brand 1", "Brand 2", ...] }`
+    );
+    return (result.chains ?? []).slice(0, 5);
+  } catch {
+    return [];
+  }
+}
+
+async function plainTextSearch(query: string, apiKey: string): Promise<PlaceResult[]> {
+  const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+    method: "POST",
+    headers: {
+      "X-Goog-Api-Key": apiKey,
+      "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ textQuery: query, maxResultCount: 5 }),
+    cache: "no-store",
+  });
+  if (!res.ok) return [];
+  const data = await res.json() as { places?: PlaceResult[] };
+  return data.places ?? [];
+}
+
 async function textSearch(query: string, lat: number, lng: number, apiKey: string): Promise<PlaceResult[]> {
   const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
     method: "POST",
@@ -263,6 +300,26 @@ export async function GET(
     }
   }
 
+  // Supplement with AI-suggested national/regional chain competitors (found by name in city)
+  const chains = await suggestChainCompetitors({ name: client.name, niche: client.niche, nicheSubtype: client.nicheSubtype, city: client.city });
+  if (chains.length > 0) {
+    const chainResults = await Promise.all(
+      chains.map((chain) => {
+        const q = `${chain} ${client.city}`;
+        return clientLocation ? textSearch(q, clientLocation.lat, clientLocation.lng, apiKey) : plainTextSearch(q, apiKey);
+      })
+    );
+    const existingIds = new Set(places.map((p) => p.id));
+    for (const results of chainResults) {
+      for (const p of results.slice(0, 3)) {
+        if (!existingIds.has(p.id)) {
+          places.push(p);
+          existingIds.add(p.id);
+        }
+      }
+    }
+  }
+
   const clientNameLower = client.name.toLowerCase();
   const existingPlaceIds = new Set([
     ...(client.competitors ?? []).map((c) => c.placeId),
@@ -275,13 +332,22 @@ export async function GET(
     return p.id && !existingPlaceIds.has(p.id) && !name.includes(clientNameLower);
   });
 
+  // Review count threshold — scale with client's own review count so small local shops
+  // are excluded when tracking a large chain (e.g. Jawed Habib with 1,415 reviews)
+  const clientReviews = client.gbpPlaceReviewCount ?? 0;
+  const minReviews = Math.max(50, Math.floor(clientReviews * 0.03));
+
+  const reviewFiltered = candidates.filter(
+    (p) => p.userRatingCount === undefined || p.userRatingCount === null || p.userRatingCount >= minReviews
+  );
+
   // Second pass: AI relevance filter — removes spas, clinics, etc.
   const relevantIds = await filterRelevantCompetitors(
     nicheLabel,
-    candidates.slice(0, 20).map((p) => ({ placeId: p.id!, name: p.displayName?.text ?? "" }))
+    reviewFiltered.slice(0, 20).map((p) => ({ placeId: p.id!, name: p.displayName?.text ?? "" }))
   );
 
-  const suggestions: CompetitorSuggestion[] = candidates
+  const suggestions: CompetitorSuggestion[] = reviewFiltered
     .filter((p) => relevantIds.has(p.id!))
     .slice(0, 10)
     .map((p) => {

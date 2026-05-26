@@ -114,6 +114,7 @@ async function nearbySearch(lat: number, lng: number, types: string[], apiKey: s
 }
 
 type NicheDetection = { searchLabel: string; placesTypes: string[] };
+type RelevanceFilter = { keep: string[] }; // array of placeIds to keep
 
 async function detectNicheWithAI(client: { name: string; nicheSubtype?: string; businessGoals?: string; city: string }): Promise<NicheDetection> {
   try {
@@ -136,6 +137,33 @@ Return JSON:
     return result;
   } catch {
     return { searchLabel: client.nicheSubtype || "business", placesTypes: [] };
+  }
+}
+
+async function filterRelevantCompetitors(
+  clientType: string,
+  candidates: Array<{ placeId: string; name: string }>
+): Promise<Set<string>> {
+  if (candidates.length === 0) return new Set();
+  try {
+    const list = candidates.map((c, i) => `${i + 1}. [${c.placeId}] ${c.name}`).join("\n");
+    const result = await callGeminiJSON<RelevanceFilter>(
+      "niche_detection",
+      "You are a business relevance classifier. Respond with valid JSON only.",
+      `The client is a "${clientType}". From the list below, return only the place IDs of businesses that are DIRECT competitors — same type of business that a customer would choose instead of the client.
+
+EXCLUDE: spas, laser clinics, skin clinics, dermatology, medical procedures, gyms, or anything a customer would NOT consider as an alternative to a "${clientType}".
+INCLUDE: only businesses where the primary service directly overlaps with "${clientType}".
+
+Businesses:
+${list}
+
+Return JSON: { "keep": ["placeId1", "placeId2", ...] }`
+    );
+    return new Set(result.keep ?? []);
+  } catch {
+    // On AI failure, keep all candidates
+    return new Set(candidates.map((c) => c.placeId));
   }
 }
 
@@ -241,11 +269,20 @@ export async function GET(
     ...(clientPlaceId ? [clientPlaceId] : []),
   ]);
 
-  const suggestions: CompetitorSuggestion[] = places
-    .filter((p) => {
-      const name = (p.displayName?.text ?? "").toLowerCase();
-      return p.id && !existingPlaceIds.has(p.id) && !name.includes(clientNameLower);
-    })
+  // First pass: basic name filter + de-dupe
+  const candidates = places.filter((p) => {
+    const name = (p.displayName?.text ?? "").toLowerCase();
+    return p.id && !existingPlaceIds.has(p.id) && !name.includes(clientNameLower);
+  });
+
+  // Second pass: AI relevance filter — removes spas, clinics, etc.
+  const relevantIds = await filterRelevantCompetitors(
+    nicheLabel,
+    candidates.slice(0, 20).map((p) => ({ placeId: p.id!, name: p.displayName?.text ?? "" }))
+  );
+
+  const suggestions: CompetitorSuggestion[] = candidates
+    .filter((p) => relevantIds.has(p.id!))
     .slice(0, 10)
     .map((p) => {
       const distanceKm =
